@@ -1,0 +1,28 @@
+{
+  "name": "provas_ime_bot",
+  "version": "1.0.0",
+  "description": "bot que alerta sobre as provas do IME",
+  "main": "ime_fetcher.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroteosousa/provasIMEbot.git"
+  },
+  "author": "Pedro Sousa <pedroteosousa@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pedroteosousa/provasIMEbot/issues"
+  },
+  "homepage": "https://github.com/pedroteosousa/provasIMEbot#readme",
+  "dependencies": {
+    "events": "^1.1.1",
+    "fs": "0.0.1-security",
+    "ical": "^0.5.0",
+    "lowdb": "^0.16.2",
+    "node-schedule": "^1.2.1",
+    "node-telegram-bot-api": "^0.27.1"
+  }
+}
