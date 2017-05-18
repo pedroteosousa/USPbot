@@ -7,7 +7,6 @@ const day = 24*60*60*1000
 alerts = []
 
 function alert(event, time) {
-	console.log(event.title + " em " + time)
 	db.db
     .get('users')
     .reject(function(user) {
