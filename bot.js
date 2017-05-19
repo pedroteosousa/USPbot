@@ -45,7 +45,7 @@ bot.onText(/^\/upcoming(@\w+)*/m, (msg) => {
 	   		if (user.get('ignore.'+event.course).value() == true)
 	   			return
 	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
+	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(new Date(event.begin.getTime() - 3*60*60*1000), "dd/mm HH:MM")+')\n\n')
 		})
 		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
 		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
@@ -64,7 +64,7 @@ bot.onText(/^\/upcoming(@\w+)*/m, (msg) => {
 	       	if (event.course != msg.text.split(' ')[1])
 	       		return
 	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
+	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(new Date(event.begin.getTime() - 3*60*60*1000), "dd/mm HH:MM")+')\n\n')
 		})
 		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
 		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
