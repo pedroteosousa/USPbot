@@ -10,6 +10,8 @@ const token = fs.readFileSync('token.txt', 'utf8')
 
 const bot = new TelegramBot(token, {polling: true})
 
+const upcoming_days = 60
+
 module.exports.bot = bot
 
 var upcoming = []
@@ -26,30 +28,47 @@ const num = (x, pos) => {
 	return x + pos;
 }
 
-bot.onText(/^\/upcoming(@\w+)*$/, (msg) => {
-	var user = db.user.get(msg.chat.id);
+bot.onText(/^\/upcoming(@\w+)*/m, (msg) => {
+	var user = db.user.get(msg.chat.id)
 	upcoming.sort( (a, b) => { return a.begin - b.begin })
-	var message = ''
-	upcoming.forEach((event) => {
-		if (event.begin.getTime() <= Date.now())
-			return
-		if (event.begin.getTime() > Date.now() + 30*day)
-        	return
-       	if (user.get('ignore').has(event.course).value() == false) {
-         	user.set('ignore.'+event.course, true).write()
-        	return
-        }
-   		if (user.get('ignore.'+event.course).value() == true)
-   			return
-        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
-	})
-	if (message.length != 0) bot.sendMessage(msg.chat.id, message)
-	else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos 30 dias.")
-})
-
-bot.onText(/^\/disable(@\w+)*/m, (msg) => {
-
+  	if (msg.text.split(' ').length < 2) {
+		var message = ''
+		upcoming.forEach((event) => {
+			if (event.begin.getTime() <= Date.now())
+				return
+			if (event.begin.getTime() > Date.now() + upcoming_days*day)
+	        	return
+	       	if (user.get('ignore').has(event.course).value() == false) {
+	         	user.set('ignore.'+event.course, true).write()
+	        	return
+	        }
+	   		if (user.get('ignore.'+event.course).value() == true)
+	   			return
+	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
+	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
+		})
+		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
+		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
+  	}
+  	else {
+  		if (!(msg.text.split(' ')[1] in fetcher.calendars)) {
+  			bot.sendMessage(msg.chat.id, "Departamento não encontrado")
+  			return
+  		}
+  		var message = ''
+		upcoming.forEach((event) => {
+			if (event.begin.getTime() <= Date.now())
+				return
+			if (event.begin.getTime() > Date.now() + upcoming_days*day)
+	        	return
+	       	if (event.course != msg.text.split(' ')[1])
+	       		return
+	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
+	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
+		})
+		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
+		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
+  	}
 })
 
 bot.onText(/^\/show(@\w+)*$/, (msg) => {
@@ -72,6 +91,10 @@ bot.onText(/^\/disable(@\w+)*/m, (msg) => {
     	response = "Nenhum departamento especificado."
   	}
   	else {
+  		if (!(msg.text.split(' ')[1] in fetcher.calendars)) {
+  			bot.sendMessage(msg.chat.id, "Departamento não encontrado")
+  			return
+  		}
         var course = msg.text.split(' ')[1]
         if (user.get('ignore').has(course).value() == false) {
          	user.set('ignore.'+course, true).write()
@@ -95,6 +118,10 @@ bot.onText(/^\/enable(@\w+)*/m, (msg) => {
     	response = "Nenhum departamento especificado."
   	}
   	else {
+  		if (!(msg.text.split(' ')[1] in fetcher.calendars)) {
+  			bot.sendMessage(msg.chat.id, "Departamento não encontrado")
+  			return
+  		}
         var course = msg.text.split(' ')[1]
         if (user.get('ignore').has(course).value() == false) {
          	user.set('ignore.'+course, false).write()
@@ -119,7 +146,7 @@ bot.onText(/^\/update(@\w+)*$/, (msg) => {
 bot.onText(/^\/help(@\w+)*$/, (msg) => {
 	bot.sendMessage(msg.chat.id,
            "Comandos implementados: \n\n" +
-           "/upcoming - Lista os eventos dos departamentos habilitados que acontecerão nos próximos 30 dias.\n" +
+           "/upcoming - Lista os eventos dos departamentos habilitados que acontecerão nos próximos " + upcoming_days +" dias.\n" +
            "/update - Atualiza a lista de eventos (Já é feito automaticamente de hora em hora).\n" +
            "/show - Lista todos os departamentos implementados.\n" +
            "/enable departamento - Ativa notificações e listagem de eventos para um determinado departamento.\n" +
