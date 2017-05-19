@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api')
 const fs = require('fs')
 const fetcher = require('./fetcher')
 const db = require('./db')
+const dateFormat = require('dateformat')
 
 const day = 24*60*60*1000
 
@@ -41,10 +42,14 @@ bot.onText(/^\/upcoming(@\w+)*$/, (msg) => {
    		if (user.get('ignore.'+event.course).value() == true)
    			return
         const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m\n\n')
+        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(event.begin, "dd/mm HH:MM")+')\n\n')
 	})
 	if (message.length != 0) bot.sendMessage(msg.chat.id, message)
 	else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos 30 dias.")
+})
+
+bot.onText(/^\/disable(@\w+)*/m, (msg) => {
+
 })
 
 bot.onText(/^\/show(@\w+)*$/, (msg) => {
