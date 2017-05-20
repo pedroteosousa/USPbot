@@ -10,7 +10,8 @@ const token = fs.readFileSync('token.txt', 'utf8')
 
 const bot = new TelegramBot(token, {polling: true})
 
-const upcoming_days = 60
+const upcoming_days = 30
+const sizeLimit = 8
 
 module.exports.bot = bot
 
@@ -22,52 +23,100 @@ function update() {
 }
 update()
 
+function createMessageList(list) {
+  var message = ''
+  var size = 0
+  list.forEach((event) => {
+    size++
+    if (size > sizeLimit) return
+    const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
+    message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(new Date(event.begin.getTime() - 3*60*60*1000), "dd/mm HH:MM")+')\n\n')
+  })
+  if (size > sizeLimit) { 
+    message += "E mais " + (list.length - sizeLimit).toString() + " resultado(s)...\nTalvez deixar a pesquisa mais específica?"
+  }
+  return message
+}
+
 const num = (x, pos) => {
 	x = Math.floor(x)
 	if (x == 0) return "";
 	return x + pos;
 }
 
+bot.onText(/^\/search(@\w+)*/m, (msg) => {
+    upcoming.sort( (a, b) => { return a.begin - b.begin })
+    var list = []
+    if (msg.text.split(' ').length < 2) {
+        bot.sendMessage(msg.chat.id, "Nenhum argumento especificado.\nTente '\\search mat'")
+    }
+    else {
+        var queries = msg.text.split(' ')
+        upcoming.forEach((event) => {
+            var eventKeyWords = []
+            eventKeyWords = eventKeyWords.concat(event.title.split(' '))
+            eventKeyWords = eventKeyWords.concat(event.description.split(' '))
+            for (i in eventKeyWords) {
+                eventKeyWords[i] = eventKeyWords[i].toLowerCase();
+            }
+            var matches = 0
+            for (var i = 1; i < queries.length; i++) {
+                if (event.begin.getTime() <= Date.now())
+                    return
+                if (event.course.toLowerCase() == queries[i].toLowerCase())
+                    matches++
+                else if (eventKeyWords.indexOf(queries[i].toLowerCase()) > -1)
+                    matches++
+            }
+            if (matches == queries.length-1) list.push(event)
+        })
+        var message = createMessageList(list)
+        if (message.length != 0) bot.sendMessage(msg.chat.id, message)
+        else bot.sendMessage(msg.chat.id, "Nenhum evento com os argumentos especificados.")
+    }
+})
+
 bot.onText(/^\/upcoming(@\w+)*/m, (msg) => {
 	var user = db.user.get(msg.chat.id)
 	upcoming.sort( (a, b) => { return a.begin - b.begin })
+    var list = []
   	if (msg.text.split(' ').length < 2) {
-		var message = ''
-		upcoming.forEach((event) => {
+        upcoming.forEach((event) => {
 			if (event.begin.getTime() <= Date.now())
 				return
-			if (event.begin.getTime() > Date.now() + upcoming_days*day)
-	        	return
 	       	if (user.get('ignore').has(event.course).value() == false) {
 	         	user.set('ignore.'+event.course, true).write()
 	        	return
 	        }
 	   		if (user.get('ignore.'+event.course).value() == true)
 	   			return
-	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(new Date(event.begin.getTime() - 3*60*60*1000), "dd/mm HH:MM")+')\n\n')
-		})
-		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
-		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
+            list.push(event)
+        })
+        var message = createMessageList(list)
+        if (message.length != 0) bot.sendMessage(msg.chat.id, message)
+        else bot.sendMessage(msg.chat.id, "Nenhum evento encontrado.")
   	}
   	else {
-  		if (!(msg.text.split(' ')[1] in fetcher.calendars)) {
-  			bot.sendMessage(msg.chat.id, "Departamento não encontrado")
-  			return
-  		}
-  		var message = ''
+        var queries = msg.text.split(' ')
 		upcoming.forEach((event) => {
-			if (event.begin.getTime() <= Date.now())
-				return
-			if (event.begin.getTime() > Date.now() + upcoming_days*day)
-	        	return
-	       	if (event.course != msg.text.split(' ')[1])
-	       		return
-	        const t = Math.ceil((event.begin.getTime()-Date.now())/60000)
-	        message += event.title + ' em ' + (num(t/(60*24),'d ')+num((t/60)%24,'h ')+(t%60).toString()+'m  ('+dateFormat(new Date(event.begin.getTime() - 3*60*60*1000), "dd/mm HH:MM")+')\n\n')
+            var eventKeyWords = []
+            eventKeyWords = eventKeyWords.concat(event.title.split(' '))
+            eventKeyWords = eventKeyWords.concat(event.description.split(' '))
+            for (i in eventKeyWords) {
+                eventKeyWords[i] = eventKeyWords[i].toLowerCase();
+            }
+            for (var i = 1; i < queries.length; i++) {
+    			if (event.begin.getTime() <= Date.now())
+    				return
+                if (event.course.toLowerCase() == queries[i].toLowerCase())
+                    list.push(event)
+                else if (eventKeyWords.indexOf(queries[i].toLowerCase()) > -1)
+                    list.push(event)
+            }
 		})
+        var message = createMessageList(list)
 		if (message.length != 0) bot.sendMessage(msg.chat.id, message)
-		else bot.sendMessage(msg.chat.id, "Nenhum evento nos próximos " + upcoming_days + " dias.")
+		else bot.sendMessage(msg.chat.id, "Nenhum evento com os argumentos especificados.")
   	}
 })
 
@@ -146,7 +195,8 @@ bot.onText(/^\/update(@\w+)*$/, (msg) => {
 bot.onText(/^\/help(@\w+)*$/, (msg) => {
 	bot.sendMessage(msg.chat.id,
            "Comandos implementados: \n\n" +
-           "/upcoming - Lista os eventos dos departamentos habilitados que acontecerão nos próximos " + upcoming_days +" dias.\n" +
+           "/upcoming - Lista os eventos dos departamentos habilitados ou com certas keywords\n" +
+           "/search - Lista os eventos que possuem todas as keywords especificadas\n" +
            "/update - Atualiza a lista de eventos (Já é feito automaticamente de hora em hora).\n" +
            "/show - Lista todos os departamentos implementados.\n" +
            "/enable departamento - Ativa notificações e listagem de eventos para um determinado departamento.\n" +

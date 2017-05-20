@@ -22,6 +22,7 @@ function fetch(events, course) {
             var event = {
                 course : course,
                 title : ev.summary,
+                description : ev.description.replace(/\n/g, ' '),
                 location : ev.location,
                 begin : new Date(ev.start)
             }
