@@ -53,19 +53,14 @@ bot.onText(/^\/search(@\w+)*/m, (msg) => {
     else {
         var queries = msg.text.split(' ')
         upcoming.forEach((event) => {
-            var eventKeyWords = []
-            eventKeyWords = eventKeyWords.concat(event.title.split(' '))
-            eventKeyWords = eventKeyWords.concat(event.description.split(' '))
-            for (i in eventKeyWords) {
-                eventKeyWords[i] = eventKeyWords[i].toLowerCase();
-            }
+            var eventKeyWords = event.title + " " + event.description
             var matches = 0
             for (var i = 1; i < queries.length; i++) {
                 if (event.begin.getTime() <= Date.now())
                     return
                 if (event.course.toLowerCase() == queries[i].toLowerCase())
                     matches++
-                else if (eventKeyWords.indexOf(queries[i].toLowerCase()) > -1)
+                else if (eventKeyWords.match(new RegExp(queries[i], 'i')) != null)
                     matches++
             }
             if (matches == queries.length-1) list.push(event)
@@ -99,18 +94,13 @@ bot.onText(/^\/upcoming(@\w+)*/m, (msg) => {
   	else {
         var queries = msg.text.split(' ')
 		upcoming.forEach((event) => {
-            var eventKeyWords = []
-            eventKeyWords = eventKeyWords.concat(event.title.split(' '))
-            eventKeyWords = eventKeyWords.concat(event.description.split(' '))
-            for (i in eventKeyWords) {
-                eventKeyWords[i] = eventKeyWords[i].toLowerCase();
-            }
+            var eventKeyWords = event.title + " " + event.description
             for (var i = 1; i < queries.length; i++) {
     			if (event.begin.getTime() <= Date.now())
     				return
                 if (event.course.toLowerCase() == queries[i].toLowerCase())
                     list.push(event)
-                else if (eventKeyWords.indexOf(queries[i].toLowerCase()) > -1)
+                else if (eventKeyWords.match(new RegExp(queries[i], 'i')) != null)
                     list.push(event)
             }
 		})
